@@ -1,4 +1,6 @@
 <?php
+error_reporting(-1);
+ini_set('display_errors', 1);
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Http\Server\RequestHandlerInterface;
@@ -9,12 +11,12 @@ use Slim\Routing\RouteContext;
 require __DIR__ . '/../vendor/autoload.php';
 
 $app = AppFactory::create();
-$app->setBasePath('/public');
 
-
-$app->get('/', function(Request $request, Response $response, $args){
-    $response->getBody()->write("Hello world!");
-    return $response;
+$app->get('[/]', function (Request $request, Response $response) {    
+    $payload = json_encode(array("mensaje" => "Slim Framework 4 PHP"));
+    
+    $response->getBody()->write($payload);
+    return $response->withHeader('Content-Type', 'application/json');
 });
 
 $app->run();
