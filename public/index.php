@@ -9,7 +9,7 @@ use Slim\Routing\RouteContext;
 require __DIR__ . '/../vendor/autoload.php';
 
 $app = AppFactory::create();
-$app->setBasePath('/app');
+$app->setBasePath('/public');
 
 
 $app->get('/', function(Request $request, Response $response, $args){
