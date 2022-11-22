@@ -131,14 +131,14 @@ $app->group('/mesas', function (RouteCollectorProxy $group) {
 
 #region PRODUCTOS
 $app->group('/productos', function (RouteCollectorProxy $group) {
-  $group->get('/csv', \ProductosController::class . ':descargaCSV')
-    ->add(\MWAccesos::class . ':soloAdministradores');
+  // $group->get('/csv', \ProductosController::class . ':descargaCSV')
+  //   ->add(\MWAccesos::class . ':soloAdministradores');
 
-  $group->post('/csv', \ProductosController::class . ':cargaCSV')
-    ->add(\MWAccesos::class . ':soloAdministradores');
+  // $group->post('/csv', \ProductosController::class . ':cargaCSV')
+  //   ->add(\MWAccesos::class . ':soloAdministradores');
 
-  $group->get('/pdf', \ProductosController::class . ':descargaPDF')
-    ->add(\MWAccesos::class . ':soloAdministradores');
+  // $group->get('/pdf', \ProductosController::class . ':descargaPDF')
+  //   ->add(\MWAccesos::class . ':soloAdministradores');
 
   $group->get('[/]', \ProductosController::class . ':traerTodos');
 
