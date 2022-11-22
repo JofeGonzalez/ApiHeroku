@@ -1355,6 +1355,8 @@ abstract class Model implements Arrayable, ArrayAccess, Jsonable, JsonSerializab
      *
      * @return array
      */
+    #[\ReturnTypeWillChange]
+
     public function jsonSerialize()
     {
         return $this->toArray();
@@ -1822,6 +1824,8 @@ abstract class Model implements Arrayable, ArrayAccess, Jsonable, JsonSerializab
      * @param  mixed  $offset
      * @return mixed
      */
+    #[\ReturnTypeWillChange]
+
     public function offsetGet($offset)
     {
         return $this->getAttribute($offset);
