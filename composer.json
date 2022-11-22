@@ -2,6 +2,7 @@
     "require": {
         "slim/slim": "4.*",
         "laminas/laminas-diactoros": "^2.17",
-        "slim/psr7": "^1.6"
+        "slim/psr7": "^1.6",
+        "vlucas/phpdotenv": "^5.5"
     }
 }
