@@ -202,76 +202,76 @@ class UsuarioController implements IApiUsable
       return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
     }
   }
-  public function Login(Request $request, Response $response)
-  {
-    $datosIngresados = $request->getParsedBody();
-    if (!isset($datosIngresados["clave"]) && !Validacion::EsMail($datosIngresados["mail"])) {
-      $error = json_encode(array("Error" => "Datos incompletos"));
-      $response->getBody()->write($error);
-      return $response
-        ->withHeader('Content-Type', 'application/json')
-        ->withStatus(404);
-    }
-    try {
-      $clave = $datosIngresados["clave"];
-      $mail = $datosIngresados["mail"];
-      $listado = Usuario::all();
-      if (!is_null($listado)) {
-        foreach ($listado as $usuario) {
-          if ($usuario->Mail == $mail) {
-            if (password_verify($clave, $usuario->Clave)) {
-              $datos = [
-                "Id" => $usuario->Id,
-                "Nombre" => $usuario->Nombre, "Apellido" => $usuario->Apellido, "Mail" => $usuario->Mail,
-                "TipoUsuarioId" => $usuario->TipoUsuarioId, "SectorId" => $usuario->SectorId, "EstadoUsuarioId" => $usuario->EstadoUsuarioId
-              ];
-              $token = self::CrearToken($datos);
-              $response->getBody()->write($token);
-              return $response
-                ->withHeader('Content-Type', 'application/json')
-                ->withStatus(200);
-            } else {
-              throw new Exception("La contraseña es incorrecta");
-            }
-          }
-        }
-        throw new Exception("El mail no existe");
-      }
-    } catch (Exception $ex) {
-      $error = $ex->getMessage();
-      $datosError = json_encode(array("Ocurrio un problema al logear " . $ex->getMessage() => $error));
-      $response->getBody()->write($datosError);
-      return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
-    }
-  }
+//   public function Login(Request $request, Response $response)
+//   {
+//     $datosIngresados = $request->getParsedBody();
+//     if (!isset($datosIngresados["clave"]) && !Validacion::EsMail($datosIngresados["mail"])) {
+//       $error = json_encode(array("Error" => "Datos incompletos"));
+//       $response->getBody()->write($error);
+//       return $response
+//         ->withHeader('Content-Type', 'application/json')
+//         ->withStatus(404);
+//     }
+//     try {
+//       $clave = $datosIngresados["clave"];
+//       $mail = $datosIngresados["mail"];
+//       $listado = Usuario::all();
+//       if (!is_null($listado)) {
+//         foreach ($listado as $usuario) {
+//           if ($usuario->Mail == $mail) {
+//             if (password_verify($clave, $usuario->Clave)) {
+//               $datos = [
+//                 "Id" => $usuario->Id,
+//                 "Nombre" => $usuario->Nombre, "Apellido" => $usuario->Apellido, "Mail" => $usuario->Mail,
+//                 "TipoUsuarioId" => $usuario->TipoUsuarioId, "SectorId" => $usuario->SectorId, "EstadoUsuarioId" => $usuario->EstadoUsuarioId
+//               ];
+//               $token = self::CrearToken($datos);
+//               $response->getBody()->write($token);
+//               return $response
+//                 ->withHeader('Content-Type', 'application/json')
+//                 ->withStatus(200);
+//             } else {
+//               throw new Exception("La contraseña es incorrecta");
+//             }
+//           }
+//         }
+//         throw new Exception("El mail no existe");
+//       }
+//     } catch (Exception $ex) {
+//       $error = $ex->getMessage();
+//       $datosError = json_encode(array("Ocurrio un problema al logear " . $ex->getMessage() => $error));
+//       $response->getBody()->write($datosError);
+//       return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+//     }
+//   }
 
-  public static function CrearToken($datos)
-  {
-    $timeNow = time();
-    $payload = array(
-      "iat" => $timeNow,
-      "exp" => $timeNow + (63600), // se agregan segundos
-      "aud" => self::Aud(),
-      "data" => $datos,
-      "app" => 'La Comanda'
-    );
-    return JWT::encode($payload, $_ENV['SECRET_KEY']);
-  }
-  public static function Aud()
-  {
-    $aud = '';
+//   public static function CrearToken($datos)
+//   {
+//     $timeNow = time();
+//     $payload = array(
+//       "iat" => $timeNow,
+//       "exp" => $timeNow + (63600), // se agregan segundos
+//       "aud" => self::Aud(),
+//       "data" => $datos,
+//       "app" => 'La Comanda'
+//     );
+//     return JWT::encode($payload, $_ENV['SECRET_KEY']);
+//   }
+//   public static function Aud()
+//   {
+//     $aud = '';
 
-    if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
-      $aud = $_SERVER['HTTP_CLIENT_IP'];
-    } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-      $aud = $_SERVER['HTTP_X_FORWARDED_FOR'];
-    } else {
-      $aud = $_SERVER['REMOTE_ADDR'];
-    }
+//     if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
+//       $aud = $_SERVER['HTTP_CLIENT_IP'];
+//     } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+//       $aud = $_SERVER['HTTP_X_FORWARDED_FOR'];
+//     } else {
+//       $aud = $_SERVER['REMOTE_ADDR'];
+//     }
 
-    $aud .= @$_SERVER['HTTP_USER_AGENT'];
-    $aud .= gethostname();
+//     $aud .= @$_SERVER['HTTP_USER_AGENT'];
+//     $aud .= gethostname();
 
-    return sha1($aud);
-  }
+//     return sha1($aud);
+//   }
 }

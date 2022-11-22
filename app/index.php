@@ -80,9 +80,9 @@ $capsule->setAsGlobal();
 $capsule->bootEloquent();
 
 #region LOGIN
-$app->group('/login', function (RouteCollectorProxy $group) {
-  $group->post('/', \UsuarioController::class . ':login');
-})->add(\MWLogger::class . ':usuarioLogger');
+// $app->group('/login', function (RouteCollectorProxy $group) {
+//   $group->post('/', \UsuarioController::class . ':login');
+// })->add(\MWLogger::class . ':usuarioLogger');
 #endregion
 
 #region USUARIOS
@@ -99,8 +99,9 @@ $app->group('/usuarios', function (RouteCollectorProxy $group) {
   $group->put('/estado', \UsuarioController::class . ':cambiarEstado');
 
   //$group->put('/', \UsuarioController::class . ':ModificarUno');
-})->add(\MWAccesos::class . ':soloAdministradores')
-  ->add(\MWAutenticar::class . ':verificarUsuario');
+});
+// ->add(\MWAccesos::class . ':soloAdministradores')
+//   ->add(\MWAutenticar::class . ':verificarUsuario');
 #endregion
 
 #region MESAS
@@ -109,24 +110,25 @@ $app->group('/mesas', function (RouteCollectorProxy $group) {
 
   $group->get('/{id}', \MesaController::class . ':traerUno');
 
-  $group->get('/usos/{busqueda}', \MesaController::class . ':UsoDeMesas')
-    ->add(\MWAccesos::class . ':soloAdministradores');
+  $group->get('/usos/{busqueda}', \MesaController::class . ':UsoDeMesas');
+    // ->add(\MWAccesos::class . ':soloAdministradores');
 
-  $group->get('/ventas/{busqueda}', \MesaController::class . ':VentasMesas')
-    ->add(\MWAccesos::class . ':soloAdministradores');
+  $group->get('/ventas/{busqueda}', \MesaController::class . ':VentasMesas');
+    // ->add(\MWAccesos::class . ':soloAdministradores');
 
-  $group->get('/facturas/{busqueda}', \MesaController::class . ':FacturasMesas')
-    ->add(\MWAccesos::class . ':soloAdministradores');
+  $group->get('/facturas/{busqueda}', \MesaController::class . ':FacturasMesas');
+    // ->add(\MWAccesos::class . ':soloAdministradores');
 
-  $group->get('/facturasPorMesa/{id}', \MesaController::class . ':FacturasPorMesas')
-    ->add(\MWAccesos::class . ':soloAdministradores');
+  $group->get('/facturasPorMesa/{id}', \MesaController::class . ':FacturasPorMesas');
+    // ->add(\MWAccesos::class . ':soloAdministradores');
 
-  $group->post('[/]', \MesaController::class . ':CargarUno')
-    ->add(\MWAccesos::class . ':soloAdministradores');
+  $group->post('[/]', \MesaController::class . ':CargarUno');
+    // ->add(\MWAccesos::class . ':soloAdministradores');
 
   $group->put('/estado', \MesaController::class . ':cambiarEstado');
-})->add(\MWAccesos::class . ':administradoresYMozos')
-  ->add(\MWAutenticar::class . ':verificarUsuario');
+});
+// ->add(\MWAccesos::class . ':administradoresYMozos')
+//   ->add(\MWAutenticar::class . ':verificarUsuario');
 #endregion
 
 #region PRODUCTOS
@@ -144,48 +146,51 @@ $app->group('/productos', function (RouteCollectorProxy $group) {
 
   $group->get('/{id}', \ProductosController::class . ':traerUno');
 
-  $group->post('[/]', \ProductosController::class . ':CargarUno')
-    ->add(\MWAccesos::class . ':soloAdministradores');
-})->add(\MWAccesos::class . ':administradoresYMozos')
-  ->add(\MWAutenticar::class . ':verificarUsuario');
+  $group->post('[/]', \ProductosController::class . ':CargarUno');
+    // ->add(\MWAccesos::class . ':soloAdministradores');
+});
+// ->add(\MWAccesos::class . ':administradoresYMozos')
+//   ->add(\MWAutenticar::class . ':verificarUsuario');
 #endregion
 
 #region PEDIDOS
 $app->group('/pedidos', function (RouteCollectorProxy $group) {
-  $group->get('/productosVendidos/{busqueda}', \PedidosController::class . ':ProductosVendidos')
-    ->add(\MWAccesos::class . ':soloAdministradores'); //
+  $group->get('/productosVendidos/{busqueda}', \PedidosController::class . ':ProductosVendidos');
+    // ->add(\MWAccesos::class . ':soloAdministradores'); //
 
-  $group->get('/fueraDeTiempo', \PedidosController::class . ':PedidosFueraDeTiempo')
-    ->add(\MWAccesos::class . ':soloAdministradores'); //
+  $group->get('/fueraDeTiempo', \PedidosController::class . ':PedidosFueraDeTiempo');
+    // ->add(\MWAccesos::class . ':soloAdministradores'); //
 
-  $group->get('/cancelados', \PedidosController::class . ':PedidosCancelados')
-    ->add(\MWAccesos::class . ':soloAdministradores'); //
+  $group->get('/cancelados', \PedidosController::class . ':PedidosCancelados');
+    // ->add(\MWAccesos::class . ':soloAdministradores'); //
 
   $group->get('[/]', \PedidosController::class . ':traerTodos');
 
   $group->get('/sector/{sectorId}', \PedidosController::class . ':traerPendientesPorSector');
 
-  $group->get('/listos', \PedidosController::class . ':traerPedidosListos')
-    ->add(\MWAccesos::class . ':administradoresYMozos');
+  $group->get('/listos', \PedidosController::class . ':traerPedidosListos');
+    // ->add(\MWAccesos::class . ':administradoresYMozos');
 
-  $group->get('/listosPorCodigo', \PedidosController::class . ':traerPedidosListosPorCodigo')
-    ->add(\MWAccesos::class . ':administradoresYMozos');
+  $group->get('/listosPorCodigo', \PedidosController::class . ':traerPedidosListosPorCodigo');
+    // ->add(\MWAccesos::class . ':administradoresYMozos');
 
   $group->get('/{id}', \PedidosController::class . ':traerUno');
 
-  $group->post('[/]', \PedidosController::class . ':CargarUno')
-    ->add(\MWAccesos::class . ':administradoresYMozos');
+  $group->post('[/]', \PedidosController::class . ':CargarUno');
+    // ->add(\MWAccesos::class . ':administradoresYMozos');
 
   $group->put('/estado', \PedidosController::class . ':CambiarEstado');
-})->add(\MWAccesos::class . ':todosLosUsuarios')
-  ->add(\MWAutenticar::class . ':verificarUsuario');
+});
+// ->add(\MWAccesos::class . ':todosLosUsuarios')
+//   ->add(\MWAutenticar::class . ':verificarUsuario');
 #endregion
 
 #region Ventas
 $app->group('/ventas', function (RouteCollectorProxy $group) {
   $group->put('/estado', \VentasController::class . ':modificarUno');
-})->add(\MWAccesos::class . ':soloAdministradores')
-  ->add(\MWAutenticar::class . ':verificarUsuario');
+});
+// ->add(\MWAccesos::class . ':soloAdministradores')
+//   ->add(\MWAutenticar::class . ':verificarUsuario');
 #endregion
 
 #region INFORMES 
@@ -194,8 +199,9 @@ $app->group('/informesEmpleados', function (RouteCollectorProxy $group) {
   $group->get('/sector', \PedidoUsuarioController::class . ':operacionesPorSector'); //
   $group->get('/sectorPorEmpleado', \PedidoUsuarioController::class . ':operacionesPorSectorEmpleado'); //
   $group->get('/operacionesPorEmpleado', \PedidoUsuarioController::class . ':operacionesByEmpleado'); // 
-})->add(\MWAccesos::class . ':soloAdministradores')
-  ->add(\MWAutenticar::class . ':verificarUsuario');
+});
+// ->add(\MWAccesos::class . ':soloAdministradores')
+//   ->add(\MWAutenticar::class . ':verificarUsuario');
 #endregion
 
 #region Encuestas

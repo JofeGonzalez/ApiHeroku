@@ -8,35 +8,35 @@ require_once './models/Producto.php';
 require_once './interfaces/IApiUsable.php';
 class ProductosController implements IApiUsable
 {
-  private function ActualizarProductos($listaNueva)
-  {
-    if (isset($listaNueva)) {
-      $listaActual = Producto::all();
-      foreach ($listaNueva as $prodNuevo) {
-        $flagExists = 0;
-        foreach ($listaActual as $prodViejo) {
-          if ($this->Equals($prodNuevo, $prodViejo)) {
-            $this->ModificarStock($prodNuevo->Stock, $prodViejo);
-            $this->ModificarPrecio($prodNuevo->Precio, $prodViejo);
-            $prodViejo->FechaUltimaModificacion = date("Y-m-d");
-            $prodViejo->save();
-            $flagExists = 1;
-            continue;
-          }
-        }
-        if ($flagExists == 0) {
-          $newProducto = new Producto();
-          $newProducto->Codigo = $prodNuevo->Codigo;
-          $newProducto->TipoProductoId = $prodNuevo->TipoProductoId;
-          $newProducto->Nombre = $prodNuevo->Nombre;
-          $newProducto->Stock = $prodNuevo->Stock;
-          $newProducto->Precio = $prodNuevo->Precio;
-          $newProducto->FechaCreacion = date("Y-m-d");
-          $newProducto->save();
-        }
-      }
-    }
-  }
+  // private function ActualizarProductos($listaNueva)
+  // {
+  //   if (isset($listaNueva)) {
+  //     $listaActual = Producto::all();
+  //     foreach ($listaNueva as $prodNuevo) {
+  //       $flagExists = 0;
+  //       foreach ($listaActual as $prodViejo) {
+  //         if ($this->Equals($prodNuevo, $prodViejo)) {
+  //           $this->ModificarStock($prodNuevo->Stock, $prodViejo);
+  //           $this->ModificarPrecio($prodNuevo->Precio, $prodViejo);
+  //           $prodViejo->FechaUltimaModificacion = date("Y-m-d");
+  //           $prodViejo->save();
+  //           $flagExists = 1;
+  //           continue;
+  //         }
+  //       }
+  //       if ($flagExists == 0) {
+  //         $newProducto = new Producto();
+  //         $newProducto->Codigo = $prodNuevo->Codigo;
+  //         $newProducto->TipoProductoId = $prodNuevo->TipoProductoId;
+  //         $newProducto->Nombre = $prodNuevo->Nombre;
+  //         $newProducto->Stock = $prodNuevo->Stock;
+  //         $newProducto->Precio = $prodNuevo->Precio;
+  //         $newProducto->FechaCreacion = date("Y-m-d");
+  //         $newProducto->save();
+  //       }
+  //     }
+  //   }
+  // }
   public function ModificarPrecio($precioNuevo, $productoViejo)
   {
     if ($productoViejo->Precio < $precioNuevo) {
