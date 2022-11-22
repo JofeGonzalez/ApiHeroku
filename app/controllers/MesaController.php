@@ -1,346 +1,231 @@
 <?php
-
-use App\Models\Mesa;
-use App\Models\Pedido;
-use App\Models\Ventas;
-use App\Models\PedidoUsuario;
-use App\Models\Venta;
-use Psr\Http\Message\ResponseInterface as Response;
-use Psr\Http\Message\ServerRequestInterface as Request;
-use Illuminate\Database\Capsule\Manager as Capsule;
-
 require_once './models/Mesa.php';
-require_once './models/Ventas.php';
-require_once './interfaces/IApiUsable.php';
-class MesaController implements IApiUsable
+require_once './models/Pedido.php';
+require_once './controllers/AbstractController.php';
+
+/**
+ * MesaController
+ * 
+ */
+class MesaController extends AbstractController
 {
-    public function CambiarEstado(Request $request, Response $response, array $args)
+    function __construct()
     {
-        $datosIngresados = $request->getParsedBody()["body"];
-        $idMozo = $request->getParsedBody()["token"]->Id;
-        if (
-            !isset($datosIngresados["estado"]) ||
-            !isset($datosIngresados["mesaId"])
-        ) {
-            $error = json_encode(array("Error" => "Datos incompletos"));
-            $response->getBody()->write($error);
-            return $response
-                ->withHeader('Content-Type', 'application/json')
-                ->withStatus(404);
-        }
-        try {
-            $id = $datosIngresados["mesaId"];
-            $nuevoEstado = $datosIngresados["estado"];
-            $mesaModificado = Mesa::where("Id", "=", $id)->first();
-            $mesaModificado->EstadoMesaId = $nuevoEstado;
-            $codigoPedido = $datosIngresados["codigoPedido"] ?? -1;
-            if ($mesaModificado->save()) {
-                if ($mesaModificado->EstadoMesaId == 2) {
-                    $pedidosAModificado = Pedido::all()->where("CodigoPedido", "=", $codigoPedido);
-                    foreach ($pedidosAModificado as $pedido) {
-                        $pedido->HorarioDeEntrega = date("G:i:s");
-                        PedidoUsuario::where("Pedido_id", $pedido->Id)
-                            ->update(["Entregado" => 1]);
-                        $pedido->save();
-                    }
-                } else if ($mesaModificado->EstadoMesaId == 3) {
-                    $pedidosACobrar = Pedido::all()->where("CodigoPedido", "=", $codigoPedido);
-                    $importe = 0;
-                    foreach ($pedidosACobrar as $pedido) {
-                        $importe += $pedido->Importe;
-                    }
-                    $newVenta = new Ventas();
-                    $newVenta->mesa_id = $id;
-                    $newVenta->importe = $importe;
-                    $newVenta->fecha = date("Y-m-d");
-                    $newVenta->Pagado = false;
-                    $newVenta->save();
-                }
-                $datos = json_encode(array("Resultado" => "Modificado con exito"));
-                $response->getBody()->write($datos);
-                return $response
-                    ->withHeader('Content-Type', 'application/json')
-                    ->withStatus(200);
-            }
-        } catch (Exception $ex) {
-            $error = $ex->getMessage();
-            $datosError = json_encode(array("Error" => $error));
-            $response->getBody()->write($datosError);
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
-        }
-    }
-    public function TraerUno(Request $request, Response $response, array $args)
-    {
-        try {
-            //Los datos ingresados por la url se buscan en args
-            $id = $args["id"];
-            $datos = json_encode(Mesa::where("Id", "=", $id)->first());
-            $response->getBody()->write($datos);
-            return $response
-                ->withHeader('Content-Type', 'application/json')
-                ->withStatus(200);
-        } catch (Exception $ex) {
-            $error = $ex->getMessage();
-            $datosError = json_encode(array("Error" => $error));
-            $response->getBody()->write($datosError);
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
-        }
+      $this->controlledClass = Mesa::class;
+      $this->obligatoryParameters = ['codigo'];
     }
 
-    public function UsoDeMesas(Request $request, Response $response, array $args)
-    {
-        try {
-            if (!isset($args["busqueda"]) || ($args["busqueda"] != "mayor" && $args["busqueda"] != "menor")) {
-                $error = json_encode(array("Error" => "Datos incorrectos"));
-                $response->getBody()->write($error);
-                return $response
-                    ->withHeader('Content-Type', 'application/json')
-                    ->withStatus(404);
-            }
-            $busqueda = $args["busqueda"];
-            $datos = $request->getQueryParams();
+    #region INFORMES
 
-            $fechaInicio = ($datos["fechaInicio"] ?? date_format(new DateTime(), "Y-m-d"));
-            $fechaFin = ($datos["fechaFin"] ?? date_format(new DateTime(), "Y-m-d"));
-            //Validación de datosIngresados
-            if ($busqueda == "mayor") {
-                $mesas = Capsule::table("Ventas")
-                    ->select(Capsule::raw('COUNT(*) as cantidad_usos_total, mesa_id'))
-                    ->where("fecha", ">=", $fechaInicio)
-                    ->where("fecha", "<=", $fechaFin)
-                    ->where("Pagado", "=", 1)
-                    ->orderByDesc("cantidad_usos_total")
-                    ->groupBy("mesa_id")
-                    ->limit(1)
-                    ->get();
-            } else if ($busqueda == "menor") {
-                $mesas = Capsule::table("Ventas")
-                    ->select(Capsule::raw('COUNT(*) as cantidad_usos_total, mesa_id'))
-                    ->where("fecha", ">=", $fechaInicio)
-                    ->where("fecha", "<=", $fechaFin)
-                    ->where("Pagado", "=", 1)
-                    ->orderBy("cantidad_usos_total", "asc")
-                    ->groupBy("mesa_id")
-                    ->limit(1)
-                    ->get();
-            }
-            if (count($mesas) == 0) {
-                throw new Exception("No se encontraron Logs");
-            }
-            $datos = json_encode($mesas);
-            $response->getBody()->write($datos);
-            return $response
-                ->withHeader('Content-Type', 'application/json')
-                ->withStatus(200);
-        } catch (Exception $ex) {
-            $error = $ex->getMessage();
-            $datosError = json_encode(array("Error" => $error));
-            $response->getBody()->write($datosError);
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
-        }
-    }
-    public function VentasMesas(Request $request, Response $response, array $args)
-    {
-        try {
-            if (!isset($args["busqueda"]) || ($args["busqueda"] != "mayor" && $args["busqueda"] != "menor")) {
-                $error = json_encode(array("Error" => "Datos incorrectos"));
-                $response->getBody()->write($error);
-                return $response
-                    ->withHeader('Content-Type', 'application/json')
-                    ->withStatus(404);
-            }
-            $busqueda = $args["busqueda"];
-            $datos = $request->getQueryParams();
+    //USO
+    function traerMasUsada($request, $response, $args){
 
-            $fechaInicio = ($datos["fechaInicio"] ?? date_format(new DateTime(), "Y-m-d"));
-            $fechaFin = ($datos["fechaFin"] ?? date_format(new DateTime(), "Y-m-d"));
-            //Validación de datosIngresados
-            if ($busqueda == "mayor") {
-                $mesas = Capsule::table("Ventas")
-                    ->select(Capsule::raw('SUM(importe) as cantidad_vendida_total, mesa_id'))
-                    ->where("fecha", ">=", $fechaInicio)
-                    ->where("fecha", "<=", $fechaFin)
-                    ->where("Pagado", "=", 1)
-                    ->orderByDesc("cantidad_vendida_total")
-                    ->groupBy("mesa_id")
-                    ->limit(1)
-                    ->get();
-            } else if ($busqueda == "menor") {
-                $mesas = Capsule::table("Ventas")
-                    ->select(Capsule::raw('SUM(importe) as cantidad_vendida_total, mesa_id'))
-                    ->where("fecha", ">=", $fechaInicio)
-                    ->where("fecha", "<=", $fechaFin)
-                    ->where("Pagado", "=", 1)
-                    ->orderBy("cantidad_vendida_total", "asc")
-                    ->groupBy("mesa_id")
-                    ->limit(1)
-                    ->get();
-            }
-            if (count($mesas) == 0) {
-                throw new Exception("No se encontraron Logs");
-            }
-            $datos = json_encode($mesas);
-            $response->getBody()->write($datos);
-            return $response
-                ->withHeader('Content-Type', 'application/json')
-                ->withStatus(200);
-        } catch (Exception $ex) {
-            $error = $ex->getMessage();
-            $datosError = json_encode(array("Error" => $error));
-            $response->getBody()->write($datosError);
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
-        }
-    }
-    public function FacturasPorMesas(Request $request, Response $response, array $args)
-    {
-        try {
-            if (!isset($args["id"])) {
-                $error = json_encode(array("Error" => "Datos incorrectos"));
-                $response->getBody()->write($error);
-                return $response
-                    ->withHeader('Content-Type', 'application/json')
-                    ->withStatus(404);
-            }
-            $idMesa = $args["id"];
-            $datos = $request->getQueryParams();
+      $mesas =  self::getMaxMinMesas($request, $response, $args, 'Mesa::getPorUso');
 
-            $fechaInicio = ($datos["fechaInicio"] ?? date_format(new DateTime(), "Y-m-d"));
-            $fechaFin = ($datos["fechaFin"] ?? date_format(new DateTime(), "Y-m-d"));
-
-            //Validación de datosIngresados
-            $mesas = Capsule::table("Ventas")
-                ->select(Capsule::raw('SUM(importe) as cantidad_vendida_total, mesa_id'))
-                ->where("fecha", ">=", $fechaInicio)
-                ->where("fecha", "<=", $fechaFin)
-                ->where("Pagado", "=", 1)
-                ->where("mesa_id", "=", $idMesa)
-                ->get();
-            if (count($mesas) == 0) {
-                throw new Exception("No se encontraron Logs");
-            }
-            $datos = json_encode($mesas);
-            $response->getBody()->write($datos);
-            return $response
-                ->withHeader('Content-Type', 'application/json')
-                ->withStatus(200);
-        } catch (Exception $ex) {
-            $error = $ex->getMessage();
-            $datosError = json_encode(array("Error" => $error));
-            $response->getBody()->write($datosError);
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
-        }
-    }
-    public function FacturasMesas(Request $request, Response $response, array $args)
-    {
-        try {
-            if (!isset($args["busqueda"]) || ($args["busqueda"] != "mayor" && $args["busqueda"] != "menor")) {
-                $error = json_encode(array("Error" => "Datos incorrectos"));
-                $response->getBody()->write($error);
-                return $response
-                    ->withHeader('Content-Type', 'application/json')
-                    ->withStatus(404);
-            }
-            $busqueda = $args["busqueda"];
-            $datos = $request->getQueryParams();
-
-            $fechaInicio = ($datos["fechaInicio"] ?? date_format(new DateTime(), "Y-m-d"));
-            $fechaFin = ($datos["fechaFin"] ?? date_format(new DateTime(), "Y-m-d"));
-            $limit = ($datos["limit"] ?? 10);
-            //Validación de datosIngresados
-            if ($busqueda == "mayor") {
-                $mesas = Capsule::table("Ventas")
-                    ->where("fecha", ">=", $fechaInicio)
-                    ->where("fecha", "<=", $fechaFin)
-                    ->where("Pagado", "=", 1)
-                    ->orderByDesc("importe")
-                    ->groupBy("mesa_id")
-                    ->limit($limit)
-                    ->get();
-            } else if ($busqueda == "menor") {
-                $mesas = Capsule::table("Ventas")
-                    ->where("fecha", ">=", $fechaInicio)
-                    ->where("fecha", "<=", $fechaFin)
-                    ->where("Pagado", "=", 1)
-                    ->orderBy("importe", "asc")
-                    ->groupBy("mesa_id")
-                    ->limit($limit)
-                    ->get();
-            }
-            if (count($mesas) == 0) {
-                throw new Exception("No se encontraron Logs");
-            }
-            $datos = json_encode($mesas);
-            $response->getBody()->write($datos);
-            return $response
-                ->withHeader('Content-Type', 'application/json')
-                ->withStatus(200);
-        } catch (Exception $ex) {
-            $error = $ex->getMessage();
-            $datosError = json_encode(array("Error" => $error));
-            $response->getBody()->write($datosError);
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
-        }
-    }
-    public function TraerTodos(Request $request, Response $response, array $args)
-    {
-        try {
-            $datos = json_encode(Mesa::all());
-            $response->getBody()->write($datos);
-            return $response
-                ->withHeader('Content-Type', 'application/json')
-                ->withStatus(200);
-        } catch (Exception $ex) {
-            $error = $ex->getMessage();
-            $datosError = json_encode(array("Error" => $error));
-            $response->getBody()->write($datosError);
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
-        }
-    }
-    public function CargarUno(Request $request, Response $response, array $args)
-    {
-        try {
-            $datosIngresados = $request->getParsedBody()["body"];
-            //Validación de datosIngresados
-            if (!isset($datosIngresados["nroMesa"])) {
-                $error = json_encode(array("Error" => "Datos incompletos"));
-                $response->getBody()->write($error);
-                return $response
-                    ->withHeader('Content-Type', 'application/json')
-                    ->withStatus(404);
-            }
-            $nroMesa = $datosIngresados["nroMesa"];
-            $newMesa = new Mesa();
-            $newMesa->Codigo = $this->GenerarCodigoMesa($nroMesa);
-            if ($newMesa->save()) {
-                $payload = json_encode(array("Resultado" => "Agregado"));
-            }
-            $response->getBody()->write($payload);
-            return $response
-                ->withHeader('Content-Type', 'application/json')
-                ->withStatus(200);
-        } catch (Exception $ex) {
-            $error = $ex->getMessage();
-            $datosError = json_encode(array("Error" => $error));
-            $response->getBody()->write($datosError);
-            return $response
-                ->withHeader('Content-Type', 'application/json')
-                ->withStatus(500);
-        }
-    }
-    private function GenerarCodigoMesa($nroMesa)
-    {
-        $codigo = "M";
-        $caracteresFaltantes = 3;
-        for ($i = 0; $i < $caracteresFaltantes; $i++) {
-            $codigo .= "0";
-        }
-        return $codigo . $nroMesa;
+      if($mesas->count() === 1){
+        $payload = json_encode(array("mesa mas usada" => $mesas));
+      } else {
+        $payload = json_encode(array("mesas mas usadas" => $mesas));
+      };      
+      
+      $response->getBody()->write($payload);
+      return $response
+        ->withHeader('Content-Type', 'application/json');
     }
 
-    public function BorrarUno(Request $request, Response $response, array $args)
-    {
+    function traerMenosUsada($request, $response, $args){
+
+      $mesas =  self::getMaxMinMesas($request, $response, $args, 'Mesa::getPorUso', 'min');
+
+      if($mesas->count() === 1){
+        $payload = json_encode(array("mesa menos usada" => $mesas));
+      } else {
+        $payload = json_encode(array("mesas menos usadas" => $mesas));
+      };      
+      
+      $response->getBody()->write($payload);
+      return $response
+        ->withHeader('Content-Type', 'application/json');
     }
-    public function ModificarUno(Request $request, Response $response, array $args)
-    {
+
+    //FACTURACION 
+
+    function traerMayorFacturacion($request, $response, $args){
+
+      $mesas =  self::getMaxMinMesas($request, $response, $args, 'Mesa::getPorFacturacion');
+
+      if($mesas->count() === 1){
+        $payload = json_encode(array("mesa con mayor facturacion" => $mesas));
+      } else {
+        $payload = json_encode(array("mesas con mayor facturacion" => $mesas));
+      };      
+      
+      $response->getBody()->write($payload);
+      return $response
+        ->withHeader('Content-Type', 'application/json');   
     }
+
+    function traerMenorFacturacion($request, $response, $args){
+
+      $mesas =  self::getMaxMinMesas($request, $response, $args, 'Mesa::getPorFacturacion', 'min');
+
+      if($mesas->count() === 1){
+        $payload = json_encode(array("mesa con menor facturacion" => $mesas));
+      } else {
+        $payload = json_encode(array("mesas con menor facturacion" => $mesas));
+      };      
+      
+      $response->getBody()->write($payload);
+      return $response
+        ->withHeader('Content-Type', 'application/json');   
+    }
+
+    //IMPORTE
+
+    function traerMayorImporte($request, $response, $args){
+
+      $mesas =  self::getMaxMinMesas($request, $response, $args, 'Mesa::getPorImporte');
+
+      if($mesas->count() === 1){
+        $payload = json_encode(array("mesa con mayor importe" => $mesas));
+      } else {
+        $payload = json_encode(array("mesas con mayor importe" => $mesas));
+      };      
+      
+      $response->getBody()->write($payload);
+      return $response
+        ->withHeader('Content-Type', 'application/json');
+    } 
+
+        
+    function traerMenorImporte($request, $response, $args){
+
+      $mesas =  self::getMaxMinMesas($request, $response, $args, 'Mesa::getPorImporte', 'min');
+
+      if($mesas->count() === 1){
+        $payload = json_encode(array("mesa con menor importe" => $mesas));
+      } else {
+        $payload = json_encode(array("mesas con menor importe" => $mesas));
+      };      
+      
+      $response->getBody()->write($payload);
+      return $response
+        ->withHeader('Content-Type', 'application/json');
+    } 
+
+    
+    //COMENTARIOS
+
+    function traerMejoresComentarios($request, $response, $args){
+     
+      $mesas = self::getMaxMinMesas($request, $response, $args, 'Mesa::getPorComentarios');
+
+      if($mesas->count() === 1){
+        $payload = json_encode(array("mesa con mejores comentarios" => $mesas));
+      } else {
+        $payload = json_encode(array("mesas con mejores comentarios" => $mesas));
+      };      
+      
+      $response->getBody()->write($payload);
+      return $response
+        ->withHeader('Content-Type', 'application/json');    
+    } 
+
+        
+    function traerPeoresComentarios($request, $response, $args){
+
+      $mesas = self::getMaxMinMesas($request, $response, $args, 'Mesa::getPorComentarios','min');
+
+      if($mesas->count() === 1){
+        $payload = json_encode(array("mesa con peores comentarios" => $mesas));
+      } else {
+        $payload = json_encode(array("mesas con peores comentarios" => $mesas));
+      };      
+      
+      $response->getBody()->write($payload);
+      return $response
+        ->withHeader('Content-Type', 'application/json');
+    } 
+
+    function traerFacturacionTodas($request, $response, $args){
+      $parametros = $request->getParsedBody();
+
+      //default
+      $fechaInicio = Carbon\Carbon::minValue();
+      $fechaFin = Carbon\Carbon::maxValue();
+
+      if(isset($parametros)){
+        $fechas = setFechasInicioFin($parametros);
+        if(isset($fechas)){
+          $fechaInicio = $fechas[0]->format('Y-m-d');
+          $fechaFin = $fechas[1]->format('Y-m-d');
+        }
+      }
+
+      $mesas = Mesa::getTodasPorFacturacion($fechaInicio, $fechaFin);
+
+      $payload = json_encode(array("mesas" => $mesas));
+
+      $response->getBody()->write($payload);
+      return $response
+        ->withHeader('Content-Type', 'application/json');
+    }
+
+    function traerFacturacionUna($request, $response, $args){
+      $id = $args['id'];
+
+      $parametros = $request->getParsedBody();
+
+      //default
+      $fechaInicio = Carbon\Carbon::minValue();
+      $fechaFin = Carbon\Carbon::maxValue();
+
+      if(isset($parametros)){
+        $fechas = setFechasInicioFin($parametros);
+        if(isset($fechas)){
+          $fechaInicio = $fechas[0]->format('Y-m-d');
+          $fechaFin = $fechas[1]->format('Y-m-d');
+        }
+      }
+
+      $mesa = Mesa::getUnaPorFacturacion($id,$fechaInicio, $fechaFin);
+
+      $payload = json_encode(array("facturacion" => $mesa));
+
+      $response->getBody()->write($payload);
+      return $response
+        ->withHeader('Content-Type', 'application/json');
+    }
+
+    /**
+     * getMaxMinMesas devuelve todas las mesas que tengan mayor o menor de algo.
+     * 
+     * @param $request
+     * @param $response
+     * @param $args
+     * @param $anonFunc Funcion a usar para ejecutar la query deseada
+     * @param $keyDescription el nombre que usaremos para el mensaje de devolución
+     * @param $maxOrMin 'max' by default, or 'min'
+     */
+    static function getMaxMinMesas($request, $response, $args, $anonFunc, $maxOrMin = 'max'){
+      $parametros = $request->getParsedBody();
+
+      //default
+      $fechaInicio = Carbon\Carbon::minValue();
+      $fechaFin = Carbon\Carbon::maxValue();
+
+      if(isset($parametros)){
+        $fechas = setFechasInicioFin($parametros);
+        if(isset($fechas)){
+          $fechaInicio = $fechas[0]->format('Y-m-d');
+          $fechaFin = $fechas[1]->format('Y-m-d');
+        }
+      }  
+
+      $mesas = $anonFunc($fechaInicio,$fechaFin,$maxOrMin);
+
+      return $mesas;
+    }
+
+  #endregion
 }

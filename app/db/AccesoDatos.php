@@ -1,40 +1,19 @@
 <?php
-class AccesoDatos
-{
-    private static $objAccesoDatos;
-    private $objetoPDO;
+use Illuminate\Database\Capsule\Manager as Capsule;
 
-    private function __construct()
-    {
-        try {
-            $this->objetoPDO = new PDO('mysql:host='.$_ENV['MYSQL_HOST'].';dbname='.$_ENV['MYSQL_DB'].';charset=utf8', $_ENV['MYSQL_USER'], $_ENV['MYSQL_PASS'], array(PDO::ATTR_EMULATE_PREPARES => false, PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION));
-            $this->objetoPDO->exec("SET CHARACTER SET utf8");
-        } catch (PDOException $e) {
-            print "Error: " . $e->getMessage();
-            die();
-        }
-    }
+function iniciarCapsula(){
+    $capsule = new Capsule;
+    $capsule->addConnection([
+        'driver'    => 'mysql',
+        'host'      => $_ENV['MYSQL_HOST'],
+        'database'  => $_ENV['MYSQL_DB'],
+        'username'  => $_ENV['MYSQL_USER'],
+        'password'  => $_ENV['MYSQL_PASS'],
+        'charset'   => 'utf8',
+        'collation' => 'utf8_unicode_ci',
+        'prefix'    => '',
+    ]);
 
-    public static function obtenerInstancia()
-    {
-        if (!isset(self::$objAccesoDatos)) {
-            self::$objAccesoDatos = new AccesoDatos();
-        }
-        return self::$objAccesoDatos;
-    }
-
-    public function prepararConsulta($sql)
-    {
-        return $this->objetoPDO->prepare($sql);
-    }
-
-    public function obtenerUltimoId()
-    {
-        return $this->objetoPDO->lastInsertId();
-    }
-
-    public function __clone()
-    {
-        trigger_error('ERROR: La clonación de este objeto no está permitida', E_USER_ERROR);
-    }
+    $capsule->setAsGlobal();
+    $capsule->bootEloquent();
 }
