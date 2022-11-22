@@ -267,7 +267,7 @@ $app->group('/api/imports', function (RouteCollectorProxy $group) {
 ->add(AutentificadorController::class . ':verificarCredenciales');
 
 $app->get('[/]', function (Request $request, Response $response) {    
-    $response->getBody()->write("BackEnd de Restaurant de Agustin Coria");
+    $response->getBody()->write("BackEnd de Restaurant de Jose Gonzalez");
     return $response;
 });
 
